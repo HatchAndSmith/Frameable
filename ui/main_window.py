@@ -262,6 +262,7 @@ class MainWindow(QMainWindow):
         # Destination controls
         self._dest_ctrl = DestinationControls(self._cfg)
         self._dest_ctrl.settings_changed.connect(self._persist_cfg)
+        self._dest_ctrl.settings_changed.connect(self._sync_preset_bar)
         content_layout.addWidget(self._dest_ctrl)
 
         content_layout.addSpacing(8)

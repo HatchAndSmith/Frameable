@@ -135,6 +135,8 @@ class PresetsBar(QWidget):
         row.addStretch()
         layout.addLayout(row)
 
+        self._current_settings: dict = {}  # populated via inject_settings()
+
         self._combo.currentTextChanged.connect(self._on_selection_changed)
         self._on_selection_changed(self._combo.currentText())
 
