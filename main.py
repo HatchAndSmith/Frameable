@@ -1,0 +1,23 @@
+import sys
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
+
+from ui.main_window import MainWindow
+
+
+def main():
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
+    app = QApplication(sys.argv)
+    app.setApplicationName("Frameable")
+    app.setOrganizationName("HatchAndSmith")
+
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
