@@ -58,6 +58,7 @@ def _ffmpeg_exe() -> str:
 
 
 def _iter_frames_ffmpeg(path: Path, width: int, height: int,
+                        fps: float = 30.0,
                         start: float = 0, end: float | None = None) -> Iterator[tuple[float, np.ndarray]]:
     cmd = [_ffmpeg_exe(), "-loglevel", "error"]
     if start > 0:
@@ -66,8 +67,11 @@ def _iter_frames_ffmpeg(path: Path, width: int, height: int,
     if end is not None:
         cmd += ["-t", str(end - start)]
     cmd += ["-f", "rawvideo", "-pix_fmt", "bgr24", "-"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # Use DEVNULL for stderr — leaving it as PIPE risks deadlock when the
+    # OS pipe buffer fills on long stderr output from FFmpeg.
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     frame_size = width * height * 3
+    frame_step = 1.0 / max(fps, 1.0)
     ts = start
     try:
         while True:
@@ -76,7 +80,7 @@ def _iter_frames_ffmpeg(path: Path, width: int, height: int,
                 break
             frame = np.frombuffer(raw, np.uint8).reshape(height, width, 3).copy()
             yield ts, frame
-            ts += 1.0 / 30.0
+            ts += frame_step
     finally:
         proc.stdout.close()
         proc.wait()
@@ -87,28 +91,29 @@ def extract_at_timestamps(path: Path, info: VideoInfo,
     candidates = []
     cap = cv2.VideoCapture(str(path))
     cap_ok = cap.isOpened()
+    try:
+        for ts in sorted(set(timestamps)):
+            frame = None
+            if cap_ok:
+                cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000)
+                ok, f = cap.read()
+                if ok and f is not None and f.size > 0:
+                    frame = f
 
-    for ts in sorted(set(timestamps)):
-        frame = None
+            if frame is None:
+                for _ffts, f in _iter_frames_ffmpeg(path, info.width, info.height,
+                                                    fps=info.fps,
+                                                    start=max(0, ts - 0.05),
+                                                    end=ts + 0.05):
+                    frame = f
+                    break
+
+            if frame is not None:
+                fn = int(ts * info.fps)
+                candidates.append(FrameCandidate(timestamp=ts, frame_number=fn, image=frame))
+    finally:
         if cap_ok:
-            cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000)
-            ok, f = cap.read()
-            if ok and f is not None and f.size > 0:
-                frame = f
-
-        if frame is None:
-            for ffts, f in _iter_frames_ffmpeg(path, info.width, info.height,
-                                               start=max(0, ts - 0.05),
-                                               end=ts + 0.05):
-                frame = f
-                break
-
-        if frame is not None:
-            fn = int(ts * info.fps)
-            candidates.append(FrameCandidate(timestamp=ts, frame_number=fn, image=frame))
-
-    if cap_ok:
-        cap.release()
+            cap.release()
     return candidates
 
 

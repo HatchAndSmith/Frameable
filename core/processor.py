@@ -45,6 +45,7 @@ def process_video(
     output_dir: Path,
     blur_pct: int,
     cloud_scorer: Optional[CloudScorer],
+    subfolder: bool = True,
     progress_cb: Optional[Callback] = None,
     stop_event: Optional[threading.Event] = None,
 ) -> ProcessingResult:
@@ -107,9 +108,10 @@ def process_video(
             face_result = face_analyzer.analyze(c.image)
             c.face_count = face_result.face_count
 
-            # Cloud scoring on a subset to conserve credits (every 3rd candidate)
+            # Cloud score only faces (saves credits) and only every 3rd candidate
             cloud_data = {}
-            if cloud_scorer and cloud_scorer.any_available and i % 3 == 0:
+            if (cloud_scorer and cloud_scorer.any_available
+                    and face_result.has_faces and i % 3 == 0):
                 cloud_data = cloud_scorer.score_frame(c.image)
 
             final_score, flags = scorer.score_candidate(
@@ -153,7 +155,7 @@ def process_video(
         _progress(0.88)
 
         # --- Export ---
-        sub_dir = output_dir / video_path.stem if output_dir else output_dir
+        sub_dir = (output_dir / video_path.stem) if subfolder else output_dir
         for i, c in enumerate(final_picks):
             if _stopped():
                 return result
@@ -211,6 +213,7 @@ def process_batch(
     secs_per_frame: int,
     blur_pct: int,
     cloud_scorer: Optional[CloudScorer],
+    subfolder: bool = True,
     progress_cb: Optional[Callable] = None,
     stop_event: Optional[threading.Event] = None,
 ) -> list[ProcessingResult]:
@@ -226,8 +229,7 @@ def process_batch(
     if output_mode == "auto":
         counts = {v.path: _auto_count(v.duration, secs_per_frame) for v in valid_infos}
     else:
-        valid = [i for i in infos if i is not None]
-        counts = _distribute_counts(valid, exact_count) if valid else {}
+        counts = _distribute_counts(valid_infos, exact_count) if valid_infos else {}
 
     results = []
     for p, info in zip(videos, infos):
@@ -238,6 +240,7 @@ def process_batch(
             continue
         target = counts.get(p, 1)
         r = process_video(p, target, output_dir, blur_pct, cloud_scorer,
+                          subfolder=subfolder,
                           progress_cb=progress_cb, stop_event=stop_event)
         results.append(r)
 

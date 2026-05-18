@@ -133,17 +133,15 @@ class SettingsPanel(QDialog):
         return e
 
     def _refresh_usage(self):
-        from config.settings import _CONFIG_DIR
         from core.cloud_scorer import UsageTracker
-        tracker = UsageTracker(_CONFIG_DIR)
+        tracker = UsageTracker(CONFIG_DIR)
         self._usage_lbl.setText(
             f"GOOGLE VISION  {tracker.google_used} / 1000  THIS MONTH"
         )
 
     def _reset_google(self):
-        from config.settings import _CONFIG_DIR
         from core.cloud_scorer import UsageTracker
-        UsageTracker(_CONFIG_DIR).reset_google()
+        UsageTracker(CONFIG_DIR).reset_google()
         self._refresh_usage()
 
     def _save(self):

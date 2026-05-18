@@ -3,6 +3,7 @@ import keyring
 from pathlib import Path
 
 _CONFIG_DIR = Path.home() / ".frameable"
+CONFIG_DIR = _CONFIG_DIR  # public alias
 _CONFIG_FILE = _CONFIG_DIR / "config.json"
 _KEYRING_SERVICE = "Frameable"
 

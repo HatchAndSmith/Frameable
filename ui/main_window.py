@@ -2,9 +2,8 @@ import threading
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QThread, Signal, QObject
-from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMainWindow,
-                                QPushButton, QScrollArea, QSizePolicy,
+                                QPushButton, QScrollArea,
                                 QVBoxLayout, QWidget)
 
 from config import settings as cfg_store
@@ -57,6 +56,7 @@ class _BatchWorker(QThread):
             secs_per_frame=self._secs_per_frame,
             blur_pct=self._blur_pct,
             cloud_scorer=self._cloud,
+            subfolder=self._subfolder,
             progress_cb=progress_cb,
             stop_event=self._stop,
         )
@@ -84,6 +84,26 @@ class _UpdateWorker(QThread):
         v, url = updater.check_for_update(self._version)
         if v:
             self.update_found.emit(v, url or "")
+
+
+class _DownloadWorker(QThread):
+    progress = Signal(int)    # 0-100
+    finished = Signal()
+    failed = Signal(str)
+
+    def __init__(self, url: str):
+        super().__init__()
+        self._url = url
+
+    def run(self):
+        try:
+            updater.download_and_install(
+                self._url,
+                progress_callback=lambda p: self.progress.emit(p),
+            )
+            self.finished.emit()
+        except Exception as e:
+            self.failed.emit(str(e))
 
 
 def _rule() -> QWidget:
@@ -279,13 +299,10 @@ class MainWindow(QMainWindow):
         # Check for updates silently
         self._check_updates()
 
-    def _build_cloud_scorer(self) -> CloudScorer | None:
-        from config.settings import _CONFIG_DIR
+    def _build_cloud_scorer(self) -> CloudScorer:
         g = cfg_store.get_api_key("google_vision")
         r = cfg_store.get_api_key("replicate_token")
-        if g or r:
-            return CloudScorer(_CONFIG_DIR, google_key=g, replicate_token=r)
-        return CloudScorer(_CONFIG_DIR)
+        return CloudScorer(cfg_store.CONFIG_DIR, google_key=g, replicate_token=r)
 
     def _on_files_dropped(self, paths: list[Path]):
         durations = {}
@@ -419,16 +436,16 @@ class MainWindow(QMainWindow):
             return
         self._set_status("DOWNLOADING UPDATE")
         self._run_btn.setEnabled(False)
+        self._title_bar.hide_update()
 
-        def _dl():
-            try:
-                updater.download_and_install(
-                    self._pending_update_url,
-                    progress_callback=lambda p: self._set_status(f"DOWNLOADING  {p}%"),
-                )
-            except Exception as e:
-                self._set_status(f"UPDATE FAILED  {e}")
-                self._run_btn.setEnabled(len(self._file_list.paths()) > 0)
+        self._dl_worker = _DownloadWorker(self._pending_update_url)
+        self._dl_worker.progress.connect(
+            lambda p: self._set_status(f"DOWNLOADING  {p}%")
+        )
+        self._dl_worker.failed.connect(self._on_update_failed)
+        self._dl_worker.start()
 
-        import threading
-        threading.Thread(target=_dl, daemon=True).start()
+    def _on_update_failed(self, msg: str):
+        self._set_status(f"UPDATE FAILED  —  {msg}")
+        self._run_btn.setEnabled(len(self._file_list.paths()) > 0)
+        self._title_bar.show_update(self._pending_update_url.split("v")[-1].split("/")[0])
