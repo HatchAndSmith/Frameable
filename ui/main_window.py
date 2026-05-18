@@ -1,11 +1,16 @@
 import threading
 from pathlib import Path
 
+import subprocess
+import sys
+
 from PySide6.QtCore import Qt, QThread, Signal, QObject
+from PySide6.QtGui import QIcon, QPixmap, QColor
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMainWindow,
-                                QPushButton, QScrollArea,
+                                QPushButton, QScrollArea, QSystemTrayIcon,
                                 QVBoxLayout, QWidget)
 
+from config import presets as preset_store
 from config import settings as cfg_store
 from core import extractor, processor, updater
 from core.cloud_scorer import CloudScorer
@@ -13,6 +18,7 @@ from ui import theme
 from ui.controls import DestinationControls, OutputControls
 from ui.drop_zone import DropZone
 from ui.file_list import FileListWidget
+from ui.presets_bar import PresetsBar
 from ui.progress_panel import ProgressPanel
 from ui.scoring_panel import ScoringPanel
 from ui.settings_panel import SettingsPanel
@@ -240,9 +246,15 @@ class MainWindow(QMainWindow):
         self._file_list.list_changed.connect(self._on_list_changed)
         content_layout.addWidget(self._file_list)
 
+        # Presets bar
+        self._presets_bar = PresetsBar()
+        self._presets_bar.preset_loaded.connect(self._apply_preset)
+        content_layout.addWidget(self._presets_bar)
+
         # Output controls
         self._output_ctrl = OutputControls(self._cfg)
         self._output_ctrl.settings_changed.connect(self._persist_cfg)
+        self._output_ctrl.settings_changed.connect(self._sync_preset_bar)
         content_layout.addWidget(self._output_ctrl)
 
         content_layout.addSpacing(8)
@@ -283,6 +295,11 @@ class MainWindow(QMainWindow):
         ab_layout.addWidget(self._status_lbl)
         ab_layout.addStretch()
 
+        self._open_folder_btn = QPushButton("OPEN FOLDER")
+        self._open_folder_btn.hide()
+        self._open_folder_btn.clicked.connect(self._open_output_folder)
+        ab_layout.addWidget(self._open_folder_btn)
+
         self._cancel_btn = QPushButton("CANCEL")
         self._cancel_btn.setObjectName("cancel_btn")
         self._cancel_btn.hide()
@@ -295,6 +312,12 @@ class MainWindow(QMainWindow):
         self._run_btn.setFixedWidth(130)
         self._run_btn.clicked.connect(self._run)
         ab_layout.addWidget(self._run_btn)
+
+        # System tray (for completion notifications)
+        self._tray = self._build_tray()
+
+        # Sync preset bar with current control values
+        self._sync_preset_bar()
 
         # Check for updates silently
         self._check_updates()
@@ -334,6 +357,7 @@ class MainWindow(QMainWindow):
             pass
 
         self._run_btn.setEnabled(False)
+        self._open_folder_btn.hide()
         self._cancel_btn.show()
         self._drop_zone.setEnabled(False)
         self._file_list.lock(True)
@@ -393,11 +417,66 @@ class MainWindow(QMainWindow):
     def _on_all_done(self, total: int):
         self._run_btn.setEnabled(True)
         self._cancel_btn.hide()
+        self._open_folder_btn.show()
         self._drop_zone.setEnabled(True)
         self._file_list.lock(False)
         self._scoring.refresh()
         self._set_status(f"DONE  —  {total} FRAMES SAVED")
         self._persist_cfg()
+
+        # Tray notification if window is not in focus
+        if not self.isActiveWindow() and self._tray and self._tray.isVisible():
+            self._tray.showMessage(
+                "Frameable",
+                f"{total} frames extracted and saved.",
+                QSystemTrayIcon.MessageIcon.Information,
+                4000,
+            )
+
+    def _build_tray(self) -> QSystemTrayIcon | None:
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            return None
+        icon = self._app_icon()
+        tray = QSystemTrayIcon(icon, self)
+        tray.setToolTip("Frameable")
+        tray.show()
+        return tray
+
+    def _app_icon(self) -> QIcon:
+        from pathlib import Path
+        icon_path = Path(__file__).parent.parent / "assets" / "icon.png"
+        if icon_path.exists():
+            return QIcon(str(icon_path))
+        # Fallback: paint a tiny icon with Qt
+        px = QPixmap(32, 32)
+        px.fill(QColor(theme.BG))
+        return QIcon(px)
+
+    def _open_output_folder(self):
+        path = self._dest_ctrl.output_dir()
+        if sys.platform == "darwin":
+            subprocess.run(["open", str(path)])
+        elif sys.platform == "win32":
+            subprocess.run(["explorer", str(path)])
+        else:
+            subprocess.run(["xdg-open", str(path)])
+
+    def _apply_preset(self, data: dict):
+        self._output_ctrl.apply_preset(data)
+        self._dest_ctrl.apply_preset(data)
+        self._persist_cfg()
+
+    def _sync_preset_bar(self):
+        self._presets_bar.inject_settings(self._current_settings())
+
+    def _current_settings(self) -> dict:
+        return {
+            "output_mode":        self._output_ctrl.output_mode(),
+            "exact_count":        self._output_ctrl.exact_count(),
+            "blur_mix_pct":       self._output_ctrl.blur_pct(),
+            "auto_frames_per_sec":self._output_ctrl.secs_per_frame(),
+            "subfolder_per_video":self._dest_ctrl.subfolder_per_video(),
+        }
 
     def _open_settings(self):
         panel = SettingsPanel(self)

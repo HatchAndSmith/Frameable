@@ -98,6 +98,22 @@ class OutputControls(QWidget):
     def secs_per_frame(self) -> int:
         return int(self._rate_knob.value)
 
+    # ── Setters for preset loading ─────────────────────────────────────────
+    def apply_preset(self, data: dict):
+        mode = data.get("output_mode", "auto")
+        self._auto_radio.setChecked(mode == "auto")
+        self._manual_radio.setChecked(mode == "exact")
+        self._spin.setEnabled(mode == "exact")
+        if "exact_count" in data:
+            self._spin.setValue(int(data["exact_count"]))
+        if "blur_mix_pct" in data:
+            self._blur_knob.set_value(float(data["blur_mix_pct"]), emit=False)
+        if "auto_frames_per_sec" in data:
+            self._rate_knob.set_value(float(data["auto_frames_per_sec"]), emit=False)
+        self._blur_knob.update()
+        self._rate_knob.update()
+        self.settings_changed.emit()
+
 
 class DestinationControls(QWidget):
     settings_changed = Signal()
@@ -153,3 +169,8 @@ class DestinationControls(QWidget):
 
     def subfolder_per_video(self) -> bool:
         return self._sub_check.isChecked()
+
+    def apply_preset(self, data: dict):
+        if "subfolder_per_video" in data:
+            self._sub_check.setChecked(bool(data["subfolder_per_video"]))
+        self.settings_changed.emit()

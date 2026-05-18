@@ -5,7 +5,7 @@ from typing import Callable, Optional
 
 import numpy as np
 
-from core import extractor, scene_detect, scorer, exporter
+from core import dedup, extractor, scene_detect, scorer, exporter
 from core.cloud_scorer import CloudScorer
 from core.extractor import FrameCandidate, VideoInfo
 from core.face_analyzer import FaceAnalyzer
@@ -151,7 +151,10 @@ def process_video(
         for c in blur_picks:
             c.is_aesthetic_blur = True
 
-        final_picks = _spread_picks(selected + blur_picks)
+        # Dedup: remove near-identical frames from final selection
+        sharp_deduped = dedup.deduplicate(selected)
+        blur_deduped  = dedup.deduplicate(blur_picks)
+        final_picks   = _spread_picks(sharp_deduped + blur_deduped)
         _progress(0.88)
 
         # --- Export ---

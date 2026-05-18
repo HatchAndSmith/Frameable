@@ -37,17 +37,35 @@ class FrameCandidate:
     face_count: int = 0
 
 
+_BRAW_NOTE = (
+    "BRAW files require the Blackmagic RAW Player to be installed. "
+    "Download free from blackmagicdesign.com/support"
+)
+
+
 def get_video_info(path: Path) -> VideoInfo:
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
-        raise RuntimeError(f"Cannot open {path.name}")
-    fps = cap.get(cv2.CAP_PROP_FPS) or 24.0
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        if path.suffix.lower() == ".braw":
+            raise RuntimeError(f"{path.name}: {_BRAW_NOTE}")
+        raise RuntimeError(f"Cannot open {path.name} — codec may not be supported.")
+
+    fps    = cap.get(cv2.CAP_PROP_FPS) or 24.0
+    total  = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
-    codec = "".join([chr((fourcc >> 8 * i) & 0xFF) for i in range(4)]).strip()
+    codec  = "".join([chr((fourcc >> 8 * i) & 0xFF) for i in range(4)]).strip()
     cap.release()
+
+    if width == 0 or height == 0:
+        if path.suffix.lower() == ".braw":
+            raise RuntimeError(f"{path.name}: {_BRAW_NOTE}")
+        raise RuntimeError(
+            f"{path.name}: video dimensions are 0 — codec '{codec}' is not supported "
+            "by your OpenCV build. Install the required codec or convert the file to H.264/MOV."
+        )
+
     duration = total / fps if fps > 0 else 0
     return VideoInfo(path=path, width=width, height=height, fps=fps,
                      duration=duration, total_frames=total, codec=codec)
