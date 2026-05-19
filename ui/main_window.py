@@ -280,8 +280,8 @@ class MainWindow(QMainWindow):
 
         # Bottom action bar
         action_bar = QWidget()
-        action_bar.setFixedHeight(60)
-        action_bar.setStyleSheet(f"background: {theme.SURFACE2};")
+        action_bar.setFixedHeight(68)
+        action_bar.setStyleSheet(f"background: {theme.SURFACE};")
         root_layout.addWidget(_rule())
         root_layout.addWidget(action_bar)
 
@@ -291,7 +291,7 @@ class MainWindow(QMainWindow):
 
         self._status_lbl = QLabel("READY")
         self._status_lbl.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.10em;"
+            f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.10em;"
         )
         ab_layout.addWidget(self._status_lbl)
         ab_layout.addStretch()

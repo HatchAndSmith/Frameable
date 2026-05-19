@@ -151,8 +151,9 @@ QPushButton#run_btn:pressed {{
     background-color: #CC5518;
 }}
 QPushButton#run_btn:disabled {{
-    background-color: {SURFACE};
-    color: {TEXT_DIM};
+    background-color: transparent;
+    color: {BORDER};
+    border: 1px solid {BORDER};
 }}
 
 QPushButton#cancel_btn {{
