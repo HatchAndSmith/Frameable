@@ -113,7 +113,6 @@ class PresetsBar(QWidget):
                 outline: none;
             }}
         """)
-        self._refresh_combo()
 
         load_btn = QPushButton("LOAD")
         load_btn.setFixedWidth(60)
@@ -127,6 +126,8 @@ class PresetsBar(QWidget):
         self._del_btn.setFixedWidth(50)
         self._del_btn.setObjectName("cancel_btn")
         self._del_btn.clicked.connect(self._delete)
+
+        self._refresh_combo()
 
         row.addWidget(self._combo)
         row.addWidget(load_btn)
