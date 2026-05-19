@@ -8,7 +8,7 @@ _CONFIG_FILE = _CONFIG_DIR / "config.json"
 _KEYRING_SERVICE = "Frameable"
 
 _DEFAULTS = {
-    "last_output_dir": str(Path.home()),
+    "last_output_dir": str(Path.home() / "Desktop" / "Frameable"),
     "auto_frames_per_sec": 8,
     "blur_mix_pct": 5,
     "sample_mode": "smart",

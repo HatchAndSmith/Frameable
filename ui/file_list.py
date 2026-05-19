@@ -10,8 +10,12 @@ from ui import theme
 
 
 def _format_duration(secs: float) -> str:
-    m = int(secs // 60)
-    s = int(secs % 60)
+    total = int(secs)
+    h = total // 3600
+    m = (total % 3600) // 60
+    s = total % 60
+    if h > 0:
+        return f"{h}:{m:02d}:{s:02d}"
     return f"{m:02d}:{s:02d}"
 
 
