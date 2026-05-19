@@ -300,6 +300,7 @@ class MainWindow(QMainWindow):
 
         self._open_folder_btn = QPushButton("OPEN FOLDER")
         self._open_folder_btn.hide()
+        self._open_folder_btn.setToolTip("Reveal output folder in Finder / Explorer")
         self._open_folder_btn.clicked.connect(self._open_output_folder)
         ab_layout.addWidget(self._open_folder_btn)
 
@@ -313,6 +314,7 @@ class MainWindow(QMainWindow):
         self._run_btn.setObjectName("run_btn")
         self._run_btn.setEnabled(False)
         self._run_btn.setFixedWidth(130)
+        self._run_btn.setToolTip("Start extraction  (Return)")
         self._run_btn.clicked.connect(self._run)
         ab_layout.addWidget(self._run_btn)
 
@@ -350,11 +352,13 @@ class MainWindow(QMainWindow):
         self._file_list.add_files(paths, durations=durations, codecs=codecs)
 
     def _on_list_changed(self, count: int):
-        self._run_btn.setEnabled(count > 0)
-        if count == 0:
-            self._set_status("READY")
-        else:
-            self._set_status(f"{count} FILE{'S' if count != 1 else ''} LOADED")
+        running = bool(self._worker and self._worker.isRunning())
+        if not running:
+            self._run_btn.setEnabled(count > 0)
+            if count == 0:
+                self._set_status("READY")
+            else:
+                self._set_status(f"{count} FILE{'S' if count != 1 else ''} LOADED")
 
     def _run(self):
         paths = self._file_list.paths()
@@ -417,7 +421,11 @@ class MainWindow(QMainWindow):
         self._progress.video_done(name, frames)
         path = self._name_to_path.get(name)
         if path:
-            self._file_list.set_status(path, "done", f"{frames} STILLS")
+            if self._cancelled and frames == 0:
+                self._file_list.set_status(path, "queue", "STOPPED")
+            else:
+                label = f"{frames} STILLS" if frames > 0 else "0 STILLS"
+                self._file_list.set_status(path, "done", label)
 
     def _on_video_error(self, name: str, msg: str):
         self._progress.video_error(name, msg)
@@ -433,7 +441,8 @@ class MainWindow(QMainWindow):
         self._file_list.lock(False)
         self._scoring.refresh()
         prefix = "CANCELLED" if self._cancelled else "DONE"
-        self._set_status(f"{prefix}  —  {total} FRAMES SAVED")
+        dest = self._dest_ctrl.output_dir()
+        self._set_status(f"{prefix}  —  {total} FRAMES  →  {dest.name.upper()}")
         self._persist_cfg()
 
         # Tray notification if window is not in focus
