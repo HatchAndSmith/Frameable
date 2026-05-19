@@ -159,7 +159,7 @@ class DestinationControls(QWidget):
         self._xmp_check.toggled.connect(self._on_xmp_toggle)
         layout.addWidget(self._xmp_check)
 
-        self._angle_check = QCheckBox("  INCLUDE STRAIGHTEN ANGLE")
+        self._angle_check = QCheckBox("  INCLUDE STRAIGHTEN ANGLE  (CENTER VERTICAL)")
         self._angle_check.setChecked(cfg.get("write_angle", False))
         self._angle_check.setEnabled(self._xmp_check.isChecked())
         self._angle_check.setStyleSheet(
