@@ -37,7 +37,8 @@ class _BatchWorker(QThread):
     signals: _WorkerSignals
 
     def __init__(self, videos, output_dir, output_mode, exact_count,
-                 secs_per_frame, blur_pct, cloud_scorer, subfolder):
+                 secs_per_frame, blur_pct, cloud_scorer, subfolder,
+                 write_xmp=False, write_angle=False):
         super().__init__()
         self.signals = _WorkerSignals()
         self._videos = videos
@@ -48,6 +49,8 @@ class _BatchWorker(QThread):
         self._blur_pct = blur_pct
         self._cloud = cloud_scorer
         self._subfolder = subfolder
+        self._write_xmp = write_xmp
+        self._write_angle = write_angle
         self._stop = threading.Event()
 
     def run(self):
@@ -65,6 +68,8 @@ class _BatchWorker(QThread):
             subfolder=self._subfolder,
             progress_cb=progress_cb,
             stop_event=self._stop,
+            write_xmp=self._write_xmp,
+            write_angle=self._write_angle,
         )
         total = 0
         for r in results:
@@ -392,6 +397,8 @@ class MainWindow(QMainWindow):
             blur_pct=self._output_ctrl.blur_pct(),
             cloud_scorer=self._cloud_scorer,
             subfolder=self._dest_ctrl.subfolder_per_video(),
+            write_xmp=self._dest_ctrl.write_xmp(),
+            write_angle=self._dest_ctrl.write_angle(),
         )
         w = self._worker
         w.signals.video_progress.connect(self._on_video_progress)
@@ -497,6 +504,8 @@ class MainWindow(QMainWindow):
             "blur_mix_pct":       self._output_ctrl.blur_pct(),
             "auto_frames_per_sec":self._output_ctrl.secs_per_frame(),
             "subfolder_per_video":self._dest_ctrl.subfolder_per_video(),
+            "write_xmp":          self._dest_ctrl.write_xmp(),
+            "write_angle":        self._dest_ctrl.write_angle(),
         }
 
     def _open_settings(self):
@@ -515,6 +524,8 @@ class MainWindow(QMainWindow):
         self._cfg["blur_mix_pct"] = self._output_ctrl.blur_pct()
         self._cfg["auto_frames_per_sec"] = self._output_ctrl.secs_per_frame()
         self._cfg["subfolder_per_video"] = self._dest_ctrl.subfolder_per_video()
+        self._cfg["write_xmp"] = self._dest_ctrl.write_xmp()
+        self._cfg["write_angle"] = self._dest_ctrl.write_angle()
         cfg_store.save(self._cfg)
 
     def _set_status(self, text: str):

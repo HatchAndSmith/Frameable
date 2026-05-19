@@ -52,6 +52,8 @@ def process_video(
     progress_cb: Optional[Callback] = None,
     stop_event: Optional[threading.Event] = None,
     face_analyzer: Optional[FaceAnalyzer] = None,
+    write_xmp: bool = False,
+    write_angle: bool = False,
 ) -> ProcessingResult:
     result = ProcessingResult(video_path=video_path)
     name = video_path.name
@@ -133,6 +135,10 @@ def process_video(
                 face_result = FaceResult()
 
             c.face_count = face_result.face_count
+            c.is_smiling = face_result.is_smiling
+            c.smile_score = face_result.dominant_smile
+            c.eyes_open = face_result.eyes_open
+            c.face_area = face_result.dominant_face_area
 
             # Cloud score only faces (saves credits) and only every 3rd candidate
             cloud_data = {}
@@ -154,6 +160,7 @@ def process_video(
             c.score = final_score
             c.cloud_data = cloud_data
             c.sharpness = flags.get("sharpness", 0.0)
+            c.exposure = flags.get("exposure", 0.5)
             prev_frame = c.image
 
             if i % 15 == 0:
@@ -206,7 +213,19 @@ def process_video(
             if _stopped():
                 return result
             try:
-                saved = exporter.export_tiff(c.image, sub_dir, video_path.name, c.timestamp)
+                kws = None
+                angle = 0.0
+                if write_xmp:
+                    from core import keywords as kw_mod
+                    kws = kw_mod.generate(c)
+                    if write_angle:
+                        from core import horizon as hz_mod
+                        angle = hz_mod.detect_angle(c.image)
+                saved = exporter.export_tiff(
+                    c.image, sub_dir, video_path.name, c.timestamp,
+                    keywords=kws, crop_angle=angle,
+                    write_xmp=write_xmp, write_angle=write_angle,
+                )
                 result.saved_paths.append(saved)
             except Exception as exc:
                 _log.error("  export failed frame %.2fs: %s", c.timestamp, exc)
@@ -271,6 +290,8 @@ def process_batch(
     subfolder: bool = True,
     progress_cb: Optional[Callable] = None,
     stop_event: Optional[threading.Event] = None,
+    write_xmp: bool = False,
+    write_angle: bool = False,
 ) -> list[ProcessingResult]:
     infos = []
     for p in videos:
@@ -299,7 +320,8 @@ def process_batch(
             r = process_video(p, target, output_dir, blur_pct, cloud_scorer,
                               subfolder=subfolder,
                               progress_cb=progress_cb, stop_event=stop_event,
-                              face_analyzer=shared_analyzer)
+                              face_analyzer=shared_analyzer,
+                              write_xmp=write_xmp, write_angle=write_angle)
             results.append(r)
     finally:
         shared_analyzer.cleanup()

@@ -54,7 +54,12 @@ class FrameCandidate:
     cloud_data: dict = field(default_factory=dict)
     is_aesthetic_blur: bool = False
     sharpness: float = 0.0
+    exposure: float = 0.5
     face_count: int = 0
+    is_smiling: bool = False
+    smile_score: float = 0.0
+    eyes_open: bool = True
+    face_area: float = 0.0
 
 
 _BRAW_NOTE = (

@@ -15,6 +15,8 @@ _DEFAULTS = {
     "output_mode": "auto",
     "exact_count": 50,
     "subfolder_per_video": True,
+    "write_xmp": False,
+    "write_angle": False,
     "google_api_usage": {},
 }
 

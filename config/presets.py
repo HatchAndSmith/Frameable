@@ -10,6 +10,8 @@ PRESET_KEYS = (
     "blur_mix_pct",
     "auto_frames_per_sec",
     "subfolder_per_video",
+    "write_xmp",
+    "write_angle",
 )
 
 BUILT_IN: dict[str, dict] = {

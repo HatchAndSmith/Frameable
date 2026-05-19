@@ -152,6 +152,22 @@ class DestinationControls(QWidget):
         self._sub_check.toggled.connect(self.settings_changed)
         layout.addWidget(self._sub_check)
 
+        layout.addSpacing(6)
+
+        self._xmp_check = QCheckBox("WRITE XMP SIDECAR  (KEYWORDS)")
+        self._xmp_check.setChecked(cfg.get("write_xmp", False))
+        self._xmp_check.toggled.connect(self._on_xmp_toggle)
+        layout.addWidget(self._xmp_check)
+
+        self._angle_check = QCheckBox("  INCLUDE STRAIGHTEN ANGLE")
+        self._angle_check.setChecked(cfg.get("write_angle", False))
+        self._angle_check.setEnabled(self._xmp_check.isChecked())
+        self._angle_check.setStyleSheet(
+            f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.08em;"
+        )
+        self._angle_check.toggled.connect(self.settings_changed)
+        layout.addWidget(self._angle_check)
+
     def _browse(self):
         chosen = QFileDialog.getExistingDirectory(self, "Select Output Folder", str(self._path))
         if chosen:
@@ -159,6 +175,12 @@ class DestinationControls(QWidget):
             self._path_lbl.setText(self._truncate(self._path))
             self._path_lbl.setToolTip(str(self._path))
             self.settings_changed.emit()
+
+    def _on_xmp_toggle(self, checked: bool):
+        self._angle_check.setEnabled(checked)
+        if not checked:
+            self._angle_check.setChecked(False)
+        self.settings_changed.emit()
 
     def _truncate(self, p: Path) -> str:
         s = str(p)
@@ -170,7 +192,17 @@ class DestinationControls(QWidget):
     def subfolder_per_video(self) -> bool:
         return self._sub_check.isChecked()
 
+    def write_xmp(self) -> bool:
+        return self._xmp_check.isChecked()
+
+    def write_angle(self) -> bool:
+        return self._angle_check.isChecked()
+
     def apply_preset(self, data: dict):
         if "subfolder_per_video" in data:
             self._sub_check.setChecked(bool(data["subfolder_per_video"]))
+        if "write_xmp" in data:
+            self._xmp_check.setChecked(bool(data["write_xmp"]))
+        if "write_angle" in data:
+            self._angle_check.setChecked(bool(data["write_angle"]))
         self.settings_changed.emit()

@@ -57,11 +57,15 @@ class SettingsPanel(QDialog):
         layout.addWidget(self._google_edit)
 
         layout.addSpacing(6)
-        g_hint = QLabel(
-            "console.cloud.google.com — Vision API — Credentials — Create API key"
-        )
-        g_hint.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
-        layout.addWidget(g_hint)
+        for line in [
+            "1. Go to console.cloud.google.com",
+            "2. Create a project → Enable the Cloud Vision API",
+            "3. APIs & Services → Credentials → Create API key",
+            "Free tier: 1,000 face detections / month",
+        ]:
+            lbl = QLabel(line)
+            lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
+            layout.addWidget(lbl)
 
         layout.addSpacing(20)
         layout.addWidget(_rule())
@@ -75,9 +79,14 @@ class SettingsPanel(QDialog):
         layout.addWidget(self._replicate_edit)
 
         layout.addSpacing(6)
-        r_hint = QLabel("replicate.com — Account — API tokens — Create token")
-        r_hint.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
-        layout.addWidget(r_hint)
+        for line in [
+            "1. Go to replicate.com and sign in",
+            "2. Click your avatar → API tokens → Create token",
+            "Used for NIMA aesthetic scoring (pay-per-use, fractions of a cent each)",
+        ]:
+            lbl = QLabel(line)
+            lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
+            layout.addWidget(lbl)
 
         layout.addSpacing(20)
         layout.addWidget(_rule())
