@@ -202,8 +202,8 @@ class MainWindow(QMainWindow):
         self._pending_update_url: str = ""
 
         self.setWindowTitle("Frameable")
-        self.setMinimumSize(720, 640)
-        self.resize(820, 740)
+        self.setMinimumSize(800, 700)
+        self.resize(960, 840)
         self.setStyleSheet(theme.QSS)
 
         # Root widget
@@ -320,6 +320,13 @@ class MainWindow(QMainWindow):
         # Sync preset bar with current control values
         self._sync_preset_bar()
 
+        # Keyboard shortcuts
+        from PySide6.QtGui import QKeySequence, QShortcut
+        QShortcut(QKeySequence.StandardKey.Open, self,
+                  activated=self._drop_zone._open_dialog)
+        QShortcut(QKeySequence("Return"), self, activated=self._maybe_run)
+        QShortcut(QKeySequence("Escape"), self, activated=self._cancel)
+
         # Check for updates silently
         self._check_updates()
 
@@ -390,6 +397,10 @@ class MainWindow(QMainWindow):
         if self._worker:
             self._worker.stop()
             self._set_status("CANCELLING")
+
+    def _maybe_run(self):
+        if self._run_btn.isEnabled():
+            self._run()
 
     def _on_video_progress(self, name: str, prog: float, frames: int):
         self._progress.update_video(name, prog, frames)

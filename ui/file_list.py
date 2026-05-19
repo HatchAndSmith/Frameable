@@ -44,7 +44,7 @@ class FileRow(QWidget):
         self._status = "ready"
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 6, 8, 6)
+        layout.setContentsMargins(12, 8, 8, 8)
         layout.setSpacing(16)
 
         name = QLabel(path.name)
@@ -84,6 +84,7 @@ class FileRow(QWidget):
         layout.addWidget(codec_lbl)
         layout.addWidget(self._status_lbl)
         layout.addWidget(remove_btn)
+        self.setStyleSheet(f"border-bottom: 1px solid {theme.BORDER};")
 
     def set_status(self, status: str, label: str | None = None):
         self._status = status
@@ -101,6 +102,7 @@ class FileListWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._rows: dict[Path, FileRow] = {}
+        self._durations: dict[Path, float] = {}
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -117,7 +119,7 @@ class FileListWidget(QWidget):
                               ("CODEC", False), ("STATUS", False), ("", False)]:
             lbl = QLabel(txt)
             lbl.setStyleSheet(
-                f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.12em;"
+                f"color: {theme.TEXT_DIM}; font-size: 10px; letter-spacing: 0.12em;"
             )
             if stretch:
                 lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -130,7 +132,7 @@ class FileListWidget(QWidget):
         self._scroll.setFrameShape(self._scroll.Shape.NoFrame)
         self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._scroll.setMinimumHeight(120)
-        self._scroll.setMaximumHeight(240)
+        self._scroll.setMaximumHeight(280)
 
         self._inner = QWidget()
         self._inner.setStyleSheet(f"background: {theme.BG};")
@@ -157,13 +159,13 @@ class FileListWidget(QWidget):
         fl.setContentsMargins(12, 0, 8, 0)
         self._count_lbl = QLabel("0 FILES")
         self._count_lbl.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.10em;"
+            f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.10em;"
         )
         clear_btn = QPushButton("CLEAR ALL")
         clear_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent; border: none;
-                color: {theme.TEXT_DIM}; font-size: 9px;
+                color: {theme.TEXT_DIM}; font-size: 11px;
                 letter-spacing: 0.10em; padding: 0;
             }}
             QPushButton:hover {{ color: {theme.TEXT}; }}
@@ -180,6 +182,9 @@ class FileListWidget(QWidget):
             if p in self._rows:
                 continue
             dur = (durations or {}).get(p)
+            dur_val = (durations or {}).get(p)
+            if dur_val is not None:
+                self._durations[p] = dur_val
             codec = (codecs or {}).get(p, "")
             row = FileRow(p, duration=dur, codec=codec)
             row.remove_requested.connect(self._remove)
@@ -193,6 +198,7 @@ class FileListWidget(QWidget):
         if row:
             self._inner_layout.removeWidget(row)
             row.deleteLater()
+        self._durations.pop(path, None)
         self._refresh()
 
     def clear_all(self):
@@ -200,12 +206,21 @@ class FileListWidget(QWidget):
             self._inner_layout.removeWidget(row)
             row.deleteLater()
         self._rows.clear()
+        self._durations.clear()
         self._refresh()
 
     def _refresh(self):
         n = len(self._rows)
         self._empty_lbl.setVisible(n == 0)
-        self._count_lbl.setText(f"{n} FILE{'S' if n != 1 else ''}")
+        total_dur = sum(self._durations.values())
+        if total_dur > 0:
+            h = int(total_dur // 3600)
+            m = int((total_dur % 3600) // 60)
+            s = int(total_dur % 60)
+            dur_str = f"  —  {h}h {m:02d}m" if h > 0 else f"  —  {m}m {s:02d}s"
+            self._count_lbl.setText(f"{n} FILE{'S' if n != 1 else ''}{dur_str}")
+        else:
+            self._count_lbl.setText(f"{n} FILE{'S' if n != 1 else ''}")
         self.list_changed.emit(n)
 
     def paths(self) -> list[Path]:

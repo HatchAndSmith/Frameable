@@ -14,6 +14,26 @@ SUPPORTED_EXTENSIONS = {
 }
 
 
+_CODEC_NAMES: dict[str, str] = {
+    "avc1": "H.264", "h264": "H.264", "x264": "H.264", "davc": "H.264",
+    "hvc1": "HEVC",  "hev1": "HEVC",  "hevc": "HEVC",  "h265": "HEVC", "x265": "HEVC",
+    "vp09": "VP9",   "vp9":  "VP9",   "vp08": "VP8",   "vp8":  "VP8",
+    "av01": "AV1",
+    "ap4h": "ProRes 4444", "ap4x": "ProRes 4444",
+    "apch": "ProRes HQ",   "apcn": "ProRes 422",
+    "apcs": "ProRes LT",   "apco": "ProRes Proxy",
+    "mjpeg": "MJPEG", "mjpg": "MJPEG",
+    "mp4v": "MPEG-4", "xvid": "XVID",
+    "bgr3": "BGR",   "bgr":  "BGR",
+    "theo": "Theora",
+}
+
+
+def normalize_codec(fourcc: str) -> str:
+    key = fourcc.lower().strip("\x00").strip()
+    return _CODEC_NAMES.get(key, fourcc.upper().strip("\x00").strip() or "—")
+
+
 @dataclass
 class VideoInfo:
     path: Path
@@ -55,7 +75,8 @@ def get_video_info(path: Path) -> VideoInfo:
     width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
-    codec  = "".join([chr((fourcc >> 8 * i) & 0xFF) for i in range(4)]).strip()
+    raw_fourcc = "".join([chr((fourcc >> 8 * i) & 0xFF) for i in range(4)])
+    codec = normalize_codec(raw_fourcc)
     cap.release()
 
     if width == 0 or height == 0:

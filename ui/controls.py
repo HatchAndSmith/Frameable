@@ -12,7 +12,7 @@ from ui.widgets.knob import Knob
 def _section_label(text: str) -> QLabel:
     lbl = QLabel(text)
     lbl.setStyleSheet(
-        f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.14em;"
+        f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.14em;"
     )
     return lbl
 
@@ -133,7 +133,7 @@ class DestinationControls(QWidget):
         path_row = QHBoxLayout()
         path_row.setSpacing(10)
         self._path_lbl = QLabel(self._truncate(self._path))
-        self._path_lbl.setStyleSheet(f"color: {theme.TEXT}; font-size: 10px;")
+        self._path_lbl.setStyleSheet(f"color: {theme.TEXT}; font-size: 12px;")
         self._path_lbl.setToolTip(str(self._path))
 
         browse_btn = QPushButton("BROWSE")

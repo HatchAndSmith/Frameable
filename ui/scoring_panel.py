@@ -24,7 +24,7 @@ class ScoringPanel(QWidget):
         layout.addWidget(_rule())
         header = QLabel("SCORING")
         header.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.14em;"
+            f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.14em;"
         )
         header.setContentsMargins(0, 10, 0, 10)
         layout.addWidget(header)
@@ -49,16 +49,16 @@ class ScoringPanel(QWidget):
 
         code_lbl = QLabel(f"[{code}]")
         code_lbl.setFixedWidth(22)
-        code_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
+        code_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 11px;")
 
         name_lbl = QLabel(name)
-        name_lbl.setFixedWidth(140)
-        name_lbl.setStyleSheet(f"color: {theme.TEXT}; font-size: 10px;")
+        name_lbl.setFixedWidth(160)
+        name_lbl.setStyleSheet(f"color: {theme.TEXT}; font-size: 12px;")
 
         led = LED()
 
         status_lbl = QLabel("")
-        status_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
+        status_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 11px;")
 
         row.addWidget(code_lbl)
         row.addWidget(name_lbl)
@@ -98,7 +98,7 @@ class ScoringPanel(QWidget):
     def _set_row(self, row: dict, active: bool, color: str, text: str):
         row["led"].set_state(active, color)
         row["status"].setText(text)
-        row["status"].setStyleSheet(f"color: {color if active else theme.TEXT_DIM}; font-size: 10px;")
+        row["status"].setStyleSheet(f"color: {color if active else theme.TEXT_DIM}; font-size: 11px;")
 
     def set_cloud_scorer(self, cloud_scorer):
         self._cloud = cloud_scorer

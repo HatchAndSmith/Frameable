@@ -7,6 +7,9 @@ try:
 except ImportError:
     _AVAILABLE = False
 
+import logging as _logging
+_logging.getLogger("scenedetect").setLevel(_logging.CRITICAL + 1)
+
 
 def detect_scenes(path: Path, duration: float) -> list[tuple[float, float]]:
     if not _AVAILABLE:
