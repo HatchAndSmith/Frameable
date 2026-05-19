@@ -125,8 +125,8 @@ class TitleBar(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(40)
-        self.setStyleSheet(f"background: {theme.SURFACE2};")
+        self.setFixedHeight(44)
+        self.setStyleSheet(f"background: {theme.BG};")
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(20, 0, 16, 0)

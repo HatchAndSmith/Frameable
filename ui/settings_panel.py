@@ -134,7 +134,7 @@ class SettingsPanel(QDialog):
 
     def _refresh_usage(self):
         from core.cloud_scorer import UsageTracker
-        tracker = UsageTracker(CONFIG_DIR)
+        tracker = UsageTracker(cfg_store.CONFIG_DIR)
         self._usage_lbl.setText(
             f"GOOGLE VISION  {tracker.google_used} / 1000  THIS MONTH"
         )

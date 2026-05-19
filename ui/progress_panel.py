@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -20,26 +21,26 @@ class VideoProgressRow(QWidget):
         super().__init__(parent)
         self.name = name
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 4, 0, 4)
+        layout.setContentsMargins(0, 5, 0, 5)
         layout.setSpacing(14)
 
         name_lbl = QLabel(name)
         name_lbl.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        name_lbl.setStyleSheet(f"color: {theme.TEXT}; font-size: 10px;")
+        name_lbl.setStyleSheet(f"color: {theme.TEXT}; font-size: 12px;")
         name_lbl.setToolTip(name)
 
         self._meter = SegmentedMeter(segments=20)
-        self._meter.setMinimumWidth(140)
-        self._meter.setFixedWidth(200)
+        self._meter.setMinimumWidth(160)
+        self._meter.setFixedWidth(220)
 
         self._pct_lbl = QLabel("0%")
-        self._pct_lbl.setFixedWidth(34)
+        self._pct_lbl.setFixedWidth(38)
         self._pct_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self._pct_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
+        self._pct_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 11px;")
 
         self._frames_lbl = QLabel("")
-        self._frames_lbl.setFixedWidth(80)
-        self._frames_lbl.setStyleSheet(f"color: {theme.ACCENT}; font-size: 10px;")
+        self._frames_lbl.setFixedWidth(110)
+        self._frames_lbl.setStyleSheet(f"color: {theme.ACCENT}; font-size: 11px;")
 
         layout.addWidget(name_lbl)
         layout.addWidget(self._meter)
@@ -54,13 +55,19 @@ class VideoProgressRow(QWidget):
 
     def set_done(self, frames: int):
         self._meter.set_done()
-        self._pct_lbl.setStyleSheet(f"color: {theme.GOOD}; font-size: 10px;")
+        self._pct_lbl.setStyleSheet(f"color: {theme.GOOD}; font-size: 11px;")
         self._pct_lbl.setText("DONE")
-        self._frames_lbl.setText(f"{frames} FRAMES")
+        if frames > 0:
+            self._frames_lbl.setStyleSheet(f"color: {theme.GOOD}; font-size: 11px;")
+            self._frames_lbl.setText(f"{frames} FRAMES")
+        else:
+            self._frames_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 11px;")
+            self._frames_lbl.setText("0 FRAMES")
 
     def set_error(self, msg: str):
-        self._pct_lbl.setStyleSheet(f"color: {theme.ERROR}; font-size: 10px;")
+        self._pct_lbl.setStyleSheet(f"color: {theme.ERROR}; font-size: 11px;")
         self._pct_lbl.setText("ERR")
+        self._frames_lbl.setStyleSheet(f"color: {theme.ERROR}; font-size: 11px;")
         self._frames_lbl.setText(msg[:18])
 
 
@@ -68,6 +75,7 @@ class ProgressPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._rows: dict[str, VideoProgressRow] = {}
+        self._start_time: float = 0.0
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -76,16 +84,17 @@ class ProgressPanel(QWidget):
         layout.addWidget(_rule())
         header = QLabel("PROCESSING")
         header.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.14em;"
+            f"color: {theme.TEXT_DIM}; font-size: 10px; letter-spacing: 0.14em;"
         )
         header.setContentsMargins(0, 10, 0, 10)
         layout.addWidget(header)
 
-        # Scroll area for per-video rows
+        # Per-video scroll area — taller so more rows are visible
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(scroll.Shape.NoFrame)
-        scroll.setMaximumHeight(160)
+        scroll.setMinimumHeight(180)
+        scroll.setMaximumHeight(360)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._inner = QWidget()
         self._inner_layout = QVBoxLayout(self._inner)
@@ -95,25 +104,25 @@ class ProgressPanel(QWidget):
         scroll.setWidget(self._inner)
         layout.addWidget(scroll)
 
-        layout.addSpacing(8)
+        layout.addSpacing(10)
 
-        # Overall row
+        # Overall progress row
         overall_row = QHBoxLayout()
         overall_row.setSpacing(14)
 
         overall_lbl = QLabel("TOTAL")
         overall_lbl.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.12em;"
+            f"color: {theme.TEXT_DIM}; font-size: 10px; letter-spacing: 0.12em;"
         )
         overall_lbl.setFixedWidth(60)
 
         self._overall_meter = SegmentedMeter(segments=24)
-        self._overall_meter.setMinimumWidth(140)
+        self._overall_meter.setMinimumWidth(160)
 
         self._overall_lbl = QLabel("0 / 0 VIDEOS")
-        self._overall_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
-        self._total_frames_lbl = QLabel("0 FRAMES TOTAL")
-        self._total_frames_lbl.setStyleSheet(f"color: {theme.ACCENT}; font-size: 10px;")
+        self._overall_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 12px;")
+        self._total_frames_lbl = QLabel("0 FRAMES SAVED")
+        self._total_frames_lbl.setStyleSheet(f"color: {theme.ACCENT}; font-size: 12px;")
 
         overall_row.addWidget(overall_lbl)
         overall_row.addWidget(self._overall_meter)
@@ -122,12 +131,22 @@ class ProgressPanel(QWidget):
         overall_row.addStretch()
         layout.addLayout(overall_row)
 
+        layout.addSpacing(6)
+
+        # ETA / elapsed row
+        eta_row = QHBoxLayout()
+        eta_row.setContentsMargins(74, 0, 0, 0)
+        self._eta_lbl = QLabel("")
+        self._eta_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 11px;")
+        eta_row.addWidget(self._eta_lbl)
+        eta_row.addStretch()
+        layout.addLayout(eta_row)
+
         self._total = 0
         self._done = 0
         self._total_frames = 0
 
     def start_batch(self, names: list[str]):
-        # Clear old rows
         for row in self._rows.values():
             self._inner_layout.removeWidget(row)
             row.deleteLater()
@@ -136,9 +155,11 @@ class ProgressPanel(QWidget):
         self._total = len(names)
         self._done = 0
         self._total_frames = 0
+        self._start_time = time.monotonic()
         self._overall_meter.reset()
         self._overall_lbl.setText(f"0 / {self._total} VIDEOS")
-        self._total_frames_lbl.setText("0 FRAMES TOTAL")
+        self._total_frames_lbl.setText("0 FRAMES SAVED")
+        self._eta_lbl.setText("")
 
         for name in names:
             row = VideoProgressRow(name)
@@ -156,17 +177,33 @@ class ProgressPanel(QWidget):
             row.set_done(frames)
         self._done += 1
         self._total_frames += frames
-        self._overall_meter.set_progress(self._done / max(self._total, 1))
+        frac = self._done / max(self._total, 1)
+        self._overall_meter.set_progress(frac)
         self._overall_lbl.setText(f"{self._done} / {self._total} VIDEOS")
-        self._total_frames_lbl.setText(f"{self._total_frames} FRAMES TOTAL")
-        if self._done >= self._total:
+        self._total_frames_lbl.setText(f"{self._total_frames} FRAMES SAVED")
+
+        elapsed = time.monotonic() - self._start_time
+        if 0 < frac < 1.0:
+            remaining = (elapsed / frac) - elapsed
+            mins, secs = int(remaining // 60), int(remaining % 60)
+            if mins > 0:
+                self._eta_lbl.setText(f"EST. {mins}m {secs:02d}s REMAINING")
+            else:
+                self._eta_lbl.setText(f"EST. {secs}s REMAINING")
+        elif frac >= 1.0:
             self._overall_meter.set_done()
-            self._total_frames_lbl.setStyleSheet(f"color: {theme.GOOD}; font-size: 10px;")
+            self._total_frames_lbl.setStyleSheet(f"color: {theme.GOOD}; font-size: 12px;")
+            e_mins, e_secs = int(elapsed // 60), int(elapsed % 60)
+            if e_mins > 0:
+                self._eta_lbl.setText(f"COMPLETED IN {e_mins}m {e_secs:02d}s")
+            else:
+                self._eta_lbl.setText(f"COMPLETED IN {e_secs}s")
 
     def video_error(self, name: str, msg: str):
         row = self._rows.get(name)
         if row:
             row.set_error(msg)
         self._done += 1
-        self._overall_meter.set_progress(self._done / max(self._total, 1))
+        frac = self._done / max(self._total, 1)
+        self._overall_meter.set_progress(frac)
         self._overall_lbl.setText(f"{self._done} / {self._total} VIDEOS")

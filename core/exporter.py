@@ -27,5 +27,5 @@ def export_tiff(image_bgr: np.ndarray, output_dir: Path,
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     # Scale 8-bit to 16-bit for maximum headroom
     image_16 = (image_rgb.astype(np.uint16) * 257)
-    tifffile.imwrite(str(out_path), image_16, photometric="rgb", compression="lzw")
+    tifffile.imwrite(str(out_path), image_16, photometric="rgb", compression="deflate")
     return out_path

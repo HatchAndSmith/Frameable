@@ -51,7 +51,7 @@ QMainWindow, QWidget {{
     background-color: {BG};
     color: {TEXT};
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 11px;
+    font-size: 13px;
     border: none;
     outline: none;
 }}
@@ -83,9 +83,9 @@ QLineEdit {{
     color: {TEXT};
     border: 1px solid {BORDER};
     border-radius: 0;
-    padding: 4px 8px;
+    padding: 5px 10px;
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 11px;
+    font-size: 13px;
     selection-background-color: {ACCENT};
 }}
 QLineEdit:focus {{
@@ -97,15 +97,15 @@ QSpinBox {{
     color: {TEXT};
     border: 1px solid {BORDER};
     border-radius: 0;
-    padding: 3px 6px;
+    padding: 4px 8px;
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 11px;
-    min-width: 64px;
+    font-size: 13px;
+    min-width: 70px;
 }}
 QSpinBox::up-button, QSpinBox::down-button {{
     background-color: {BORDER};
     border: none;
-    width: 14px;
+    width: 16px;
 }}
 QSpinBox::up-arrow, QSpinBox::down-arrow {{
     image: none;
@@ -118,9 +118,9 @@ QPushButton {{
     color: {TEXT};
     border: 1px solid {BORDER};
     border-radius: 0;
-    padding: 6px 16px;
+    padding: 7px 18px;
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
 }}
@@ -140,8 +140,8 @@ QPushButton#run_btn {{
     background-color: {ACCENT};
     color: {BG};
     border: none;
-    font-size: 11px;
-    padding: 10px 40px;
+    font-size: 13px;
+    padding: 12px 44px;
     letter-spacing: 0.18em;
 }}
 QPushButton#run_btn:hover {{
@@ -158,7 +158,7 @@ QPushButton#run_btn:disabled {{
 QPushButton#cancel_btn {{
     color: {TEXT_DIM};
     border-color: {SURFACE};
-    font-size: 10px;
+    font-size: 11px;
 }}
 QPushButton#cancel_btn:hover {{
     color: {TEXT};
@@ -169,12 +169,12 @@ QCheckBox {{
     color: {TEXT};
     spacing: 8px;
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 0.08em;
 }}
 QCheckBox::indicator {{
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border: 1px solid {BORDER};
     background: {SURFACE};
     border-radius: 0;
@@ -188,12 +188,12 @@ QRadioButton {{
     color: {TEXT};
     spacing: 8px;
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 0.08em;
 }}
 QRadioButton::indicator {{
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border: 1px solid {BORDER};
     background: {SURFACE};
     border-radius: 0;
@@ -213,7 +213,7 @@ QToolTip {{
     border: 1px solid {BORDER};
     padding: 4px 8px;
     font-family: "{FONT_PRIMARY}", "{FONT_FALLBACK}";
-    font-size: 10px;
+    font-size: 11px;
     border-radius: 0;
 }}
 """
