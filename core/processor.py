@@ -51,6 +51,7 @@ def process_video(
     subfolder: bool = True,
     progress_cb: Optional[Callback] = None,
     stop_event: Optional[threading.Event] = None,
+    face_analyzer: Optional[FaceAnalyzer] = None,
 ) -> ProcessingResult:
     result = ProcessingResult(video_path=video_path)
     name = video_path.name
@@ -62,7 +63,9 @@ def process_video(
     def _stopped() -> bool:
         return stop_event is not None and stop_event.is_set()
 
-    face_analyzer = FaceAnalyzer()
+    _own_analyzer = face_analyzer is None
+    if _own_analyzer:
+        face_analyzer = FaceAnalyzer()
     try:
         _log.info("Processing %s  target=%d", name, target_count)
         info = extractor.get_video_info(video_path)
@@ -218,7 +221,8 @@ def process_video(
         _log.exception("Unhandled error processing %s", name)
         result.error = str(exc)
     finally:
-        face_analyzer.cleanup()
+        if _own_analyzer:
+            face_analyzer.cleanup()
 
     return result
 
@@ -282,17 +286,22 @@ def process_batch(
     else:
         counts = _distribute_counts(valid_infos, exact_count) if valid_infos else {}
 
+    shared_analyzer = FaceAnalyzer()
     results = []
-    for p, info in zip(videos, infos):
-        if stop_event and stop_event.is_set():
-            break
-        if info is None:
-            results.append(ProcessingResult(video_path=p, error="Could not read video."))
-            continue
-        target = counts.get(p, 1)
-        r = process_video(p, target, output_dir, blur_pct, cloud_scorer,
-                          subfolder=subfolder,
-                          progress_cb=progress_cb, stop_event=stop_event)
-        results.append(r)
+    try:
+        for p, info in zip(videos, infos):
+            if stop_event and stop_event.is_set():
+                break
+            if info is None:
+                results.append(ProcessingResult(video_path=p, error="Could not read video."))
+                continue
+            target = counts.get(p, 1)
+            r = process_video(p, target, output_dir, blur_pct, cloud_scorer,
+                              subfolder=subfolder,
+                              progress_cb=progress_cb, stop_event=stop_event,
+                              face_analyzer=shared_analyzer)
+            results.append(r)
+    finally:
+        shared_analyzer.cleanup()
 
     return results
