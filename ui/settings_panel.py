@@ -9,7 +9,7 @@ from ui import theme
 def _label(text: str) -> QLabel:
     lbl = QLabel(text)
     lbl.setStyleSheet(
-        f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.12em;"
+        f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.12em;"
     )
     return lbl
 
@@ -60,7 +60,7 @@ class SettingsPanel(QDialog):
         g_hint = QLabel(
             "console.cloud.google.com — Vision API — Credentials — Create API key"
         )
-        g_hint.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 9px;")
+        g_hint.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
         layout.addWidget(g_hint)
 
         layout.addSpacing(20)
@@ -76,7 +76,7 @@ class SettingsPanel(QDialog):
 
         layout.addSpacing(6)
         r_hint = QLabel("replicate.com — Account — API tokens — Create token")
-        r_hint.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 9px;")
+        r_hint.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
         layout.addWidget(r_hint)
 
         layout.addSpacing(20)
@@ -89,7 +89,7 @@ class SettingsPanel(QDialog):
         reset_row = QHBoxLayout()
         reset_row.setSpacing(12)
         self._usage_lbl = QLabel("")
-        self._usage_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 10px;")
+        self._usage_lbl.setStyleSheet(f"color: {theme.TEXT_DIM}; font-size: 11px;")
         reset_btn = QPushButton("RESET GOOGLE COUNTER")
         reset_btn.setFixedHeight(28)
         reset_btn.clicked.connect(self._reset_google)
@@ -141,7 +141,7 @@ class SettingsPanel(QDialog):
 
     def _reset_google(self):
         from core.cloud_scorer import UsageTracker
-        UsageTracker(CONFIG_DIR).reset_google()
+        UsageTracker(cfg_store.CONFIG_DIR).reset_google()
         self._refresh_usage()
 
     def _save(self):

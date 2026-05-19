@@ -200,6 +200,8 @@ class MainWindow(QMainWindow):
         self._cloud_scorer: CloudScorer | None = self._build_cloud_scorer()
         self._worker: _BatchWorker | None = None
         self._pending_update_url: str = ""
+        self._cancelled: bool = False
+        self._name_to_path: dict[str, Path] = {}
 
         self.setWindowTitle("Frameable")
         self.setMinimumSize(800, 700)
@@ -364,6 +366,8 @@ class MainWindow(QMainWindow):
             # processor handles sub-dir creation per video
             pass
 
+        self._cancelled = False
+        self._name_to_path = {p.name: p for p in paths}
         self._run_btn.setEnabled(False)
         self._open_folder_btn.hide()
         self._cancel_btn.show()
@@ -395,6 +399,7 @@ class MainWindow(QMainWindow):
 
     def _cancel(self):
         if self._worker:
+            self._cancelled = True
             self._worker.stop()
             self._set_status("CANCELLING")
 
@@ -404,27 +409,21 @@ class MainWindow(QMainWindow):
 
     def _on_video_progress(self, name: str, prog: float, frames: int):
         self._progress.update_video(name, prog, frames)
-        p = self._file_list.paths()
-        # Mark as processing
-        for path in p:
-            if path.name == name:
-                self._file_list.set_status(path, "processing",
-                                           f"{int(prog * 100)}%")
-                break
+        path = self._name_to_path.get(name)
+        if path:
+            self._file_list.set_status(path, "processing", f"{int(prog * 100)}%")
 
     def _on_video_done(self, name: str, frames: int):
         self._progress.video_done(name, frames)
-        for path in self._file_list.paths():
-            if path.name == name:
-                self._file_list.set_status(path, "done", f"{frames} STILLS")
-                break
+        path = self._name_to_path.get(name)
+        if path:
+            self._file_list.set_status(path, "done", f"{frames} STILLS")
 
     def _on_video_error(self, name: str, msg: str):
         self._progress.video_error(name, msg)
-        for path in self._file_list.paths():
-            if path.name == name:
-                self._file_list.set_status(path, "error", "ERROR")
-                break
+        path = self._name_to_path.get(name)
+        if path:
+            self._file_list.set_status(path, "error", "ERROR")
 
     def _on_all_done(self, total: int):
         self._run_btn.setEnabled(True)
@@ -433,7 +432,8 @@ class MainWindow(QMainWindow):
         self._drop_zone.setEnabled(True)
         self._file_list.lock(False)
         self._scoring.refresh()
-        self._set_status(f"DONE  —  {total} FRAMES SAVED")
+        prefix = "CANCELLED" if self._cancelled else "DONE"
+        self._set_status(f"{prefix}  —  {total} FRAMES SAVED")
         self._persist_cfg()
 
         # Tray notification if window is not in focus

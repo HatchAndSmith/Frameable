@@ -84,7 +84,7 @@ class FileRow(QWidget):
         layout.addWidget(codec_lbl)
         layout.addWidget(self._status_lbl)
         layout.addWidget(remove_btn)
-        self.setStyleSheet(f"border-bottom: 1px solid {theme.BORDER};")
+        self.setStyleSheet(f"background: {theme.BG}; border-bottom: 1px solid {theme.BORDER};")
 
     def set_status(self, status: str, label: str | None = None):
         self._status = status
@@ -182,13 +182,11 @@ class FileListWidget(QWidget):
             if p in self._rows:
                 continue
             dur = (durations or {}).get(p)
-            dur_val = (durations or {}).get(p)
-            if dur_val is not None:
-                self._durations[p] = dur_val
+            if dur is not None:
+                self._durations[p] = dur
             codec = (codecs or {}).get(p, "")
             row = FileRow(p, duration=dur, codec=codec)
             row.remove_requested.connect(self._remove)
-            row.setStyleSheet(f"background: {theme.BG};")
             self._inner_layout.insertWidget(self._inner_layout.count() - 1, row)
             self._rows[p] = row
         self._refresh()

@@ -27,7 +27,7 @@ class _NameDialog(QDialog):
 
         lbl = QLabel("PRESET NAME")
         lbl.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.12em;"
+            f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.12em;"
         )
         layout.addWidget(lbl)
 
@@ -76,7 +76,7 @@ class PresetsBar(QWidget):
 
         header = QLabel("PRESETS")
         header.setStyleSheet(
-            f"color: {theme.TEXT_DIM}; font-size: 9px; letter-spacing: 0.14em;"
+            f"color: {theme.TEXT_DIM}; font-size: 11px; letter-spacing: 0.14em;"
         )
         header.setContentsMargins(0, 10, 0, 10)
         layout.addWidget(header)
@@ -92,7 +92,7 @@ class PresetsBar(QWidget):
                 border: 1px solid {theme.BORDER};
                 padding: 4px 10px;
                 font-family: "{theme.FONT_PRIMARY}", "{theme.FONT_FALLBACK}";
-                font-size: 10px;
+                font-size: 12px;
                 min-width: 180px;
             }}
             QComboBox::drop-down {{
@@ -109,7 +109,7 @@ class PresetsBar(QWidget):
                 border: 1px solid {theme.BORDER};
                 selection-background-color: {theme.ACCENT};
                 selection-color: {theme.BG};
-                font-size: 10px;
+                font-size: 12px;
                 outline: none;
             }}
         """)
