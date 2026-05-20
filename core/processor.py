@@ -190,10 +190,13 @@ def process_video(
             key=lambda x: x.score, reverse=True,
         )
 
-        # Fall back to all candidates if no sharp ones (e.g. very shaky footage)
+        # Fall back to top 40% by sharpness so we still prefer relatively sharper frames
         if not sharp_candidates:
-            _log.warning("  no sharp candidates — using all candidates for selection")
-            sharp_candidates = sorted(all_candidates, key=lambda x: x.score, reverse=True)
+            all_by_sharp = sorted(all_candidates, key=lambda x: x.sharpness, reverse=True)
+            top_n = max(sharp_count * 2, len(all_by_sharp) * 2 // 5)
+            sharp_candidates = all_by_sharp[:top_n]
+            _log.warning("  no sharp candidates at threshold — using top %d sharpest frames",
+                         len(sharp_candidates))
 
         selected    = _pick_proportional(sharp_candidates, scenes, sharp_count)
         blur_picks  = blur_candidates[:blur_count]

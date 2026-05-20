@@ -10,10 +10,12 @@ W_FACE = 0.24
 W_EXPR = 0.24
 W_MOTION = 0.05
 
-# Sharpness scales — higher = stricter
-LAP_SCALE = 500.0          # Laplacian variance scale
-TENENGRAD_SCALE = 4500.0   # Sobel gradient energy scale (catches motion blur)
-BLUR_THRESHOLD = 0.20      # frames below this are considered blurry
+# Sharpness scales calibrated for compressed H.264/HEVC video.
+# Typical Laplacian variance for decent H.264 frame: 20-120; for sharp: 80-300.
+# Typical Tenengrad energy for decent frame: 400-2000; for sharp: 1000-6000.
+LAP_SCALE = 150.0          # Laplacian variance scale
+TENENGRAD_SCALE = 1200.0   # Sobel gradient energy scale (catches motion blur)
+BLUR_THRESHOLD = 0.12      # frames below this are considered blurry
 SHARP_SCALE = LAP_SCALE    # backward-compat alias
 
 

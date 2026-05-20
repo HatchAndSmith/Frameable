@@ -19,6 +19,7 @@ from ui.controls import DestinationControls, OutputControls
 from ui.drop_zone import DropZone
 from ui.file_list import FileListWidget
 from ui.presets_bar import PresetsBar
+from ui.log_panel import LogPanel
 from ui.progress_panel import ProgressPanel
 from ui.scoring_panel import ScoringPanel
 from ui.settings_panel import SettingsPanel
@@ -299,6 +300,12 @@ class MainWindow(QMainWindow):
 
         content_layout.addStretch()
 
+        # Log panel (collapsible, above action bar)
+        self._log_panel = LogPanel()
+        self._log_panel.hide()
+        root_layout.addWidget(_rule())
+        root_layout.addWidget(self._log_panel)
+
         # Bottom action bar
         action_bar = QWidget()
         action_bar.setFixedHeight(68)
@@ -316,6 +323,28 @@ class MainWindow(QMainWindow):
         )
         ab_layout.addWidget(self._status_lbl)
         ab_layout.addStretch()
+
+        self._logs_btn = QPushButton("LOGS")
+        self._logs_btn.setCheckable(True)
+        self._logs_btn.setFixedWidth(64)
+        self._logs_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {theme.TEXT_DIM};
+                border: 1px solid {theme.BORDER};
+                font-size: 10px;
+                letter-spacing: 0.12em;
+                padding: 4px 0;
+            }}
+            QPushButton:hover {{ color: {theme.TEXT}; border-color: {theme.TEXT_DIM}; }}
+            QPushButton:checked {{
+                background: {theme.SURFACE2};
+                color: {theme.TEXT};
+                border-color: {theme.TEXT_DIM};
+            }}
+        """)
+        self._logs_btn.toggled.connect(self._toggle_logs)
+        ab_layout.addWidget(self._logs_btn)
 
         self._open_folder_btn = QPushButton("OPEN FOLDER")
         self._open_folder_btn.hide()
@@ -565,6 +594,9 @@ class MainWindow(QMainWindow):
         self._cfg["write_xmp"] = self._dest_ctrl.write_xmp()
         self._cfg["write_angle"] = self._dest_ctrl.write_angle()
         cfg_store.save(self._cfg)
+
+    def _toggle_logs(self, checked: bool):
+        self._log_panel.setVisible(checked)
 
     def _set_status(self, text: str):
         self._status_lbl.setText(text)
