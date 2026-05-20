@@ -138,6 +138,7 @@ class DestinationControls(QWidget):
 
         browse_btn = QPushButton("BROWSE")
         browse_btn.setFixedWidth(80)
+        browse_btn.setStyleSheet("QPushButton { padding: 5px 8px; font-size: 11px; }")
         browse_btn.clicked.connect(self._browse)
 
         path_row.addWidget(self._path_lbl)

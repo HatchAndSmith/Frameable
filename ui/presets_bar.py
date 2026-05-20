@@ -114,17 +114,28 @@ class PresetsBar(QWidget):
             }}
         """)
 
+        _small_btn_style = f"""
+            QPushButton {{
+                padding: 5px 8px;
+                font-size: 11px;
+                letter-spacing: 0.10em;
+            }}
+        """
+
         load_btn = QPushButton("LOAD")
-        load_btn.setFixedWidth(60)
+        load_btn.setFixedWidth(62)
+        load_btn.setStyleSheet(_small_btn_style)
         load_btn.clicked.connect(self._load)
 
         save_btn = QPushButton("SAVE")
-        save_btn.setFixedWidth(60)
+        save_btn.setFixedWidth(62)
+        save_btn.setStyleSheet(_small_btn_style)
         save_btn.clicked.connect(self._save)
 
         self._del_btn = QPushButton("DEL")
-        self._del_btn.setFixedWidth(50)
+        self._del_btn.setFixedWidth(52)
         self._del_btn.setObjectName("cancel_btn")
+        self._del_btn.setStyleSheet(_small_btn_style)
         self._del_btn.clicked.connect(self._delete)
 
         self._refresh_combo()

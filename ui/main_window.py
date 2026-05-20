@@ -237,8 +237,8 @@ class MainWindow(QMainWindow):
 
         content = QWidget()
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(24, 20, 24, 20)
-        content_layout.setSpacing(12)
+        content_layout.setContentsMargins(24, 14, 24, 14)
+        content_layout.setSpacing(10)
         scroll.setWidget(content)
 
         # Drop zone
@@ -264,19 +264,19 @@ class MainWindow(QMainWindow):
         self._output_ctrl.settings_changed.connect(self._sync_preset_bar)
         content_layout.addWidget(self._output_ctrl)
 
-        content_layout.addSpacing(8)
+        content_layout.addSpacing(6)
+
+        # Scoring panel — above destination so it's always in view
+        self._scoring = ScoringPanel(self._cloud_scorer)
+        content_layout.addWidget(self._scoring)
+
+        content_layout.addSpacing(6)
 
         # Destination controls
         self._dest_ctrl = DestinationControls(self._cfg)
         self._dest_ctrl.settings_changed.connect(self._persist_cfg)
         self._dest_ctrl.settings_changed.connect(self._sync_preset_bar)
         content_layout.addWidget(self._dest_ctrl)
-
-        content_layout.addSpacing(8)
-
-        # Scoring panel
-        self._scoring = ScoringPanel(self._cloud_scorer)
-        content_layout.addWidget(self._scoring)
 
         # Progress panel (hidden until running)
         self._progress = ProgressPanel()
