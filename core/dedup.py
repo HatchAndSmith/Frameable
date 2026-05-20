@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-DEFAULT_THRESHOLD = 8   # Hamming distance — lower = stricter (more unique frames)
+DEFAULT_THRESHOLD = 12  # Hamming distance — higher = more unique frames required
 
 
 def _phash(frame_bgr: np.ndarray):

@@ -138,22 +138,23 @@ QPushButton:disabled {{
 
 QPushButton#run_btn {{
     background-color: {ACCENT};
-    color: {BG};
+    color: #FFFFFF;
     border: none;
     font-size: 13px;
     padding: 12px 44px;
     letter-spacing: 0.18em;
 }}
 QPushButton#run_btn:hover {{
-    background-color: #F07030;
+    background-color: #FFFFFF;
+    color: {ACCENT};
 }}
 QPushButton#run_btn:pressed {{
-    background-color: #CC5518;
+    background-color: #E8E0D0;
+    color: {ACCENT};
 }}
 QPushButton#run_btn:disabled {{
-    background-color: transparent;
-    color: {BORDER};
-    border: 1px solid {BORDER};
+    background-color: #8A4015;
+    color: #999999;
 }}
 
 QPushButton#cancel_btn {{

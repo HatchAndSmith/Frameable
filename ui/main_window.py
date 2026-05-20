@@ -28,6 +28,7 @@ from version import __version__
 class _WorkerSignals(QObject):
     video_progress = Signal(str, float, int)   # name, 0-1, frames
     video_done = Signal(str, int)              # name, frames
+    video_skipped = Signal(str)                # name
     video_error = Signal(str, str)             # name, msg
     all_done = Signal(int)                     # total frames
     status = Signal(str)
@@ -52,6 +53,16 @@ class _BatchWorker(QThread):
         self._write_xmp = write_xmp
         self._write_angle = write_angle
         self._stop = threading.Event()
+        self._skip_names: set[str] = set()
+        self._skip_lock = threading.Lock()
+
+    def skip(self, name: str):
+        with self._skip_lock:
+            self._skip_names.add(name)
+
+    def _should_skip(self, p) -> bool:
+        with self._skip_lock:
+            return p.name in self._skip_names
 
     def run(self):
         def progress_cb(name: str, prog: float, frames: int):
@@ -70,10 +81,13 @@ class _BatchWorker(QThread):
             stop_event=self._stop,
             write_xmp=self._write_xmp,
             write_angle=self._write_angle,
+            skip_filter=self._should_skip,
         )
         total = 0
         for r in results:
-            if r.error:
+            if r.skipped:
+                self.signals.video_skipped.emit(r.video_path.name)
+            elif r.error:
                 self.signals.video_error.emit(r.video_path.name, r.error)
             else:
                 self.signals.video_done.emit(r.video_path.name, r.frame_count)
@@ -383,7 +397,15 @@ class MainWindow(QMainWindow):
         self._drop_zone.setEnabled(False)
         self._file_list.lock(True)
         self._progress.show()
-        self._progress.start_batch([p.name for p in paths])
+        items = []
+        for p in paths:
+            dur = self._file_list.duration(p)
+            try:
+                size = p.stat().st_size
+            except Exception:
+                size = 0
+            items.append((p.name, dur, size))
+        self._progress.start_batch(items)
 
         for p in paths:
             self._file_list.set_status(p, "queue", "QUEUE")
@@ -403,10 +425,26 @@ class MainWindow(QMainWindow):
         w = self._worker
         w.signals.video_progress.connect(self._on_video_progress)
         w.signals.video_done.connect(self._on_video_done)
+        w.signals.video_skipped.connect(self._on_video_skipped)
         w.signals.video_error.connect(self._on_video_error)
         w.signals.all_done.connect(self._on_all_done)
+        try:
+            self._progress.skip_requested.disconnect()
+        except (RuntimeError, TypeError):
+            pass
+        self._progress.skip_requested.connect(self._on_skip_video)
         w.start()
         self._set_status("PROCESSING")
+
+    def _on_skip_video(self, name: str):
+        if self._worker:
+            self._worker.skip(name)
+
+    def _on_video_skipped(self, name: str):
+        self._progress.video_skipped(name)
+        path = self._name_to_path.get(name)
+        if path:
+            self._file_list.set_status(path, "queue", "SKIPPED")
 
     def _cancel(self):
         if self._worker:

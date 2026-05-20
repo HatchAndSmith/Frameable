@@ -228,6 +228,9 @@ class FileListWidget(QWidget):
     def paths(self) -> list[Path]:
         return list(self._rows.keys())
 
+    def duration(self, path: Path) -> float:
+        return self._durations.get(path, 0.0)
+
     def set_status(self, path: Path, status: str, label: str | None = None):
         row = self._rows.get(path)
         if row:

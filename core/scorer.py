@@ -4,20 +4,34 @@ import numpy as np
 from core.face_analyzer import FaceResult
 
 # Scoring weights (must sum to 1.0)
-W_SHARP = 0.25
-W_EXPOSE = 0.15
-W_FACE = 0.28
-W_EXPR = 0.27
+W_SHARP = 0.34
+W_EXPOSE = 0.13
+W_FACE = 0.24
+W_EXPR = 0.24
 W_MOTION = 0.05
 
-# Sharpness: Laplacian variance — tuned for typical video resolutions
-SHARP_SCALE = 400.0
-BLUR_THRESHOLD = 0.08  # below = eligible as aesthetic blur
+# Sharpness scales — higher = stricter
+LAP_SCALE = 500.0          # Laplacian variance scale
+TENENGRAD_SCALE = 4500.0   # Sobel gradient energy scale (catches motion blur)
+BLUR_THRESHOLD = 0.20      # frames below this are considered blurry
+SHARP_SCALE = LAP_SCALE    # backward-compat alias
 
 
 def score_sharpness(gray: np.ndarray) -> float:
-    lap = cv2.Laplacian(gray, cv2.CV_64F).var()
-    return min(1.0, lap / SHARP_SCALE)
+    """Combined Laplacian + Tenengrad sharpness.
+
+    Uses the min of the two so a frame that fails either check scores
+    low. Tenengrad is particularly sensitive to motion blur (which
+    smears gradients) where Laplacian alone can be fooled by texture.
+    """
+    lap = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+    sx = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=3)
+    sy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=3)
+    tenengrad = float(np.mean(sx * sx + sy * sy))
+
+    lap_score = min(1.0, lap / LAP_SCALE)
+    ten_score = min(1.0, tenengrad / TENENGRAD_SCALE)
+    return min(lap_score, ten_score)
 
 
 def score_exposure(frame_bgr: np.ndarray) -> float:

@@ -21,6 +21,7 @@ class ProcessingResult:
     saved_paths: list[Path] = field(default_factory=list)
     frame_count: int = 0
     error: Optional[str] = None
+    skipped: bool = False
 
 
 Callback = Callable[[str, float, int], None]  # (filename, progress 0-1, frames_so_far)
@@ -54,6 +55,7 @@ def process_video(
     face_analyzer: Optional[FaceAnalyzer] = None,
     write_xmp: bool = False,
     write_angle: bool = False,
+    skip_check: Optional[Callable[[], bool]] = None,
 ) -> ProcessingResult:
     result = ProcessingResult(video_path=video_path)
     name = video_path.name
@@ -63,7 +65,12 @@ def process_video(
             progress_cb(name, p, frames)
 
     def _stopped() -> bool:
-        return stop_event is not None and stop_event.is_set()
+        if stop_event is not None and stop_event.is_set():
+            return True
+        if skip_check is not None and skip_check():
+            result.skipped = True
+            return True
+        return False
 
     _own_analyzer = face_analyzer is None
     if _own_analyzer:
@@ -248,29 +255,46 @@ def process_video(
 
 def _pick_proportional(candidates: list[FrameCandidate],
                        scenes: list[tuple[float, float]],
-                       total: int) -> list[FrameCandidate]:
+                       total: int,
+                       min_gap_sec: float = 1.5) -> list[FrameCandidate]:
+    """Pick `total` candidates spread across scenes, with at least
+    `min_gap_sec` between picks within the same scene for variety."""
     if not candidates or total <= 0:
         return []
     if len(candidates) <= total:
         return candidates
 
     total_dur = sum(e - s for s, e in scenes) or 1.0
-    picks = []
+    picks: list[FrameCandidate] = []
 
     for scene_start, scene_end in scenes:
         quota = max(1, round(total * (scene_end - scene_start) / total_dur))
-        in_scene = [c for c in candidates if scene_start <= c.timestamp < scene_end]
-        in_scene.sort(key=lambda x: x.score, reverse=True)
-        picks.extend(in_scene[:quota])
+        in_scene = sorted(
+            [c for c in candidates if scene_start <= c.timestamp < scene_end],
+            key=lambda x: x.score, reverse=True,
+        )
+        scene_picks: list[FrameCandidate] = []
+        for c in in_scene:
+            if len(scene_picks) >= quota:
+                break
+            if all(abs(c.timestamp - p.timestamp) >= min_gap_sec for p in scene_picks):
+                scene_picks.append(c)
+        picks.extend(scene_picks)
 
-    # Top-up if proportional picked fewer
+    # Top-up if proportional picked fewer than requested
     if len(picks) < total:
         already = {id(c) for c in picks}
         remainder = sorted(
             [c for c in candidates if id(c) not in already],
-            key=lambda x: x.score, reverse=True
+            key=lambda x: x.score, reverse=True,
         )
-        picks.extend(remainder[:total - len(picks)])
+        # Relaxed gap for top-up so we still hit target count if possible
+        relaxed_gap = max(0.4, min_gap_sec / 2)
+        for c in remainder:
+            if len(picks) >= total:
+                break
+            if all(abs(c.timestamp - p.timestamp) >= relaxed_gap for p in picks):
+                picks.append(c)
 
     return picks[:total]
 
@@ -292,6 +316,7 @@ def process_batch(
     stop_event: Optional[threading.Event] = None,
     write_xmp: bool = False,
     write_angle: bool = False,
+    skip_filter: Optional[Callable[[Path], bool]] = None,
 ) -> list[ProcessingResult]:
     infos = []
     for p in videos:
@@ -313,6 +338,9 @@ def process_batch(
         for p, info in zip(videos, infos):
             if stop_event and stop_event.is_set():
                 break
+            if skip_filter and skip_filter(p):
+                results.append(ProcessingResult(video_path=p, skipped=True))
+                continue
             if info is None:
                 results.append(ProcessingResult(video_path=p, error="Could not read video."))
                 continue
@@ -321,7 +349,9 @@ def process_batch(
                               subfolder=subfolder,
                               progress_cb=progress_cb, stop_event=stop_event,
                               face_analyzer=shared_analyzer,
-                              write_xmp=write_xmp, write_angle=write_angle)
+                              write_xmp=write_xmp, write_angle=write_angle,
+                              skip_check=(lambda pp=p: skip_filter(pp))
+                                         if skip_filter else None)
             results.append(r)
     finally:
         shared_analyzer.cleanup()
